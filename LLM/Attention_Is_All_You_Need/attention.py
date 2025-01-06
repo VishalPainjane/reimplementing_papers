@@ -258,3 +258,49 @@ class Transformer(nn.Module):
         return self.encoder(src, src_mask)
     
     def decoder(self, tgt, enc_out, src_mask, tgt_mask):
+        tgt = self.tgt_embed(tgt)
+        tgt = self.tgt_pos(tgt)
+        return self.decoder(tgt, enc_out, src_mask, tgt_mask)
+    
+    def forward(self, src, tgt, src_mask, tgt_mask):
+        enc_out = self.encoder(src, src_mask)
+        dec_out = self.decoder(tgt, enc_out, src_mask, tgt_mask)
+        return self.projectionlayer(dec_out)
+
+    def generate_square_subsequent_mask(self, sz):
+        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+        return mask
+    
+    def project(self, x):
+        # (batch, seq_len, vocab_size)
+        return self.projection_layer(x)
+
+def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int, tgt_seq_len: int, d_model: int=512, N: int=6, h: int=8, dropout: float=0.1, d_ff: int=2048) -> Transformer:
+    src_embed = inputembedding(d_model, src_vocab_size)
+    tgt_embed = inputembedding(d_model, tgt_vocab_size)
+
+    src_pos = positionencoding(d_model, src_seq_len, dropout)
+    tgt_pos = positionencoding(d_model, tgt_seq_len, dropout)
+
+    encoder_block = []
+    decoder_block = []
+
+    for _ in range(N):
+        encoder_block = EncoderBlock(MultiHeadAttention(d_model, h, dropout), feedForwardBlock(d_model, d_ff, dropout), dropout)
+        encoder_block.append(encoder_block)
+    for _ in range(N):
+        decoder_block = DecoderBlock(MultiHeadAttention(d_model, h, dropout), MultiHeadAttention(d_model, h, dropout), feedForwardBlock(d_model, d_ff, dropout), dropout)
+
+    encoder = Encoder(d_model, nn.ModuleList(encoder_block))
+    decoder = Decoder(d_model, nn.ModuleList(decoder_block))
+
+    proj_layer = projecitonlayer(d_model, tgt_vocab_size)
+
+    transformer = Transformer(encoder, decoder, src_embed, tgt_embed, proj_layer, src_pos, tgt_pos)
+
+    for p in transformer.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_uniform_(p)
+
+    return transformer
