@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env/
+.venv/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+eggs/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Model checkpoints and data
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.pkl
+*.bin
+data/
+datasets/
+runs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+wandb/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
